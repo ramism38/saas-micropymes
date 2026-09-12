@@ -50,4 +50,9 @@ public interface OpportunityRepository
   List<Opportunity> findByOrganization_IdAndArchivedAtIsNullAndStatusIn(
       UUID organizationId,
       Iterable<OpportunityStatus> statuses);
+
+      long countByOrganization_IdAndArchivedAtIsNullAndStatusIn(
+        UUID organizationId,
+        Iterable<OpportunityStatus> statuses
+);
 }
