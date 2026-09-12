@@ -11,11 +11,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Follow-ups", description = "Follow-up management")
 @RequestMapping("/api/v1/organizations/{organizationId}")
 public class FollowUpController {
 

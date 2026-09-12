@@ -5,6 +5,7 @@ import com.micropymes.backend.priority.dto.OpportunityPriorityResponse;
 import com.micropymes.backend.priority.service.PriorityService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @RequestMapping(
         "/api/v1/organizations/{organizationId}"
 )
+@Tag(name = "Priorities", description = "Priority management")
 public class PriorityController {
 
     private final PriorityService priorityService;

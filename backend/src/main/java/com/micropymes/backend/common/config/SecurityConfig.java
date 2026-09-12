@@ -43,6 +43,9 @@ public class SecurityConfig {
                                                                 "/actuator/health",
                                                                 "/api/v1/auth/csrf",
                                                                 "/api/v1/auth/register",
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
                                                                 "/api/v1/auth/login")
                                                 .permitAll()
                                                 .anyRequest().authenticated())

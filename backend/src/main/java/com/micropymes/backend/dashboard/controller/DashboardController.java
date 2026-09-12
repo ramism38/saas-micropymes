@@ -5,10 +5,12 @@ import com.micropymes.backend.dashboard.dto.DashboardResponse;
 import com.micropymes.backend.dashboard.service.DashboardService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Dashboard", description = "Dashboard management")
 @RequestMapping(
         "/api/v1/organizations/{organizationId}/dashboard"
 )

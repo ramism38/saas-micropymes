@@ -7,12 +7,14 @@ import com.micropymes.backend.organization.service.OrganizationService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
+@Tag(name = "Organizations", description = "Organization management")
 public class OrganizationController {
 
     private final OrganizationService organizationService;

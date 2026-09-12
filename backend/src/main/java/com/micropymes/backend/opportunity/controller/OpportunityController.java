@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.UUID;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequestMapping(
         "/api/v1/organizations/{organizationId}/opportunities"
 )
+@Tag(name = "Opportunities", description = "Opportunity management")
 public class OpportunityController {
 
     private final OpportunityService opportunityService;

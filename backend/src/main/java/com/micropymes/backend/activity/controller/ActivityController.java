@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import java.util.UUID;
         "/api/v1/organizations/{organizationId}"
         + "/opportunities/{opportunityId}/activities"
 )
+@Tag(name = "Activities", description = "Activity management")
 public class ActivityController {
 
     private final ActivityService activityService;

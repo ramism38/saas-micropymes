@@ -9,12 +9,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}")
+@Tag(name = "Quotes", description = "Quote management")
 public class QuoteController {
 
     private final QuoteService quoteService;

@@ -13,8 +13,27 @@ spring:
   flyway:
     enabled: true
 
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: false
+        same-site: lax
+
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
