@@ -1,0 +1,21 @@
+# Maven
+**/target/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+
+# VS Code local settings
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,23 @@
+package com.micropymes.backend.priority.domain;
+
+public enum PriorityReasonCode {
+
+    OVERDUE_FOLLOW_UP_LONG,
+    OVERDUE_FOLLOW_UP,
+    FOLLOW_UP_DUE_TODAY,
+    FOLLOW_UP_DUE_SOON,
+
+    INACTIVE_3_TO_6_DAYS,
+    INACTIVE_7_TO_13_DAYS,
+    INACTIVE_14_PLUS_DAYS,
+
+    QUOTE_WAITING_3_TO_6_DAYS,
+    QUOTE_WAITING_7_PLUS_DAYS,
+
+    STATUS_NEW,
+    STATUS_CONTACTED,
+    STATUS_PROPOSAL_SENT,
+    STATUS_NEGOTIATION,
+
+    NO_PENDING_FOLLOW_UP
+}

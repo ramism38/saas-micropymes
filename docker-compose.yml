@@ -1,0 +1,19 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: micropymes-postgres
+
+    environment:
+      POSTGRES_DB: micropymes
+      POSTGRES_USER: micropymes
+      POSTGRES_PASSWORD: micropymes
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
