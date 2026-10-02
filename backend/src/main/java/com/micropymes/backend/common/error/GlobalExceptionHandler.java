@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,120 +17,159 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiError> handleApiException(
-            ApiException exception,
-            HttpServletRequest request
-    ) {
+        @ExceptionHandler(ApiException.class)
+        public ResponseEntity<ApiError> handleApiException(
+                        ApiException exception,
+                        HttpServletRequest request) {
 
-        ErrorCode errorCode = exception.getErrorCode();
+                ErrorCode errorCode = exception.getErrorCode();
 
-        ApiError error = new ApiError(
-                "about:blank",
-                errorCode.getCode(),
-                errorCode.getTitle(),
-                errorCode.getStatus().value(),
-                exception.getMessage(),
-                request.getRequestURI(),
-                Instant.now(),
-                List.of()
-        );
+                ApiError error = new ApiError(
+                                "about:blank",
+                                errorCode.getCode(),
+                                errorCode.getTitle(),
+                                errorCode.getStatus().value(),
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                Instant.now(),
+                                List.of());
 
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(error);
-    }
+                return ResponseEntity
+                                .status(errorCode.getStatus())
+                                .body(error);
+        }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidationException(
-            MethodArgumentNotValidException exception,
-            HttpServletRequest request
-    ) {
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<ApiError> handleValidationException(
+                        MethodArgumentNotValidException exception,
+                        HttpServletRequest request) {
 
-        List<FieldValidationError> fieldErrors =
-                exception.getBindingResult()
-                        .getFieldErrors()
-                        .stream()
-                        .map(error -> new FieldValidationError(
-                                error.getField(),
-                                error.getDefaultMessage()
-                        ))
-                        .toList();
+                List<FieldValidationError> fieldErrors = exception.getBindingResult()
+                                .getFieldErrors()
+                                .stream()
+                                .map(error -> new FieldValidationError(
+                                                error.getField(),
+                                                error.getDefaultMessage()))
+                                .toList();
 
-        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+                ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
 
-        ApiError error = new ApiError(
-                "about:blank",
-                errorCode.getCode(),
-                errorCode.getTitle(),
-                errorCode.getStatus().value(),
-                "One or more fields are invalid",
-                request.getRequestURI(),
-                Instant.now(),
-                fieldErrors
-        );
+                ApiError error = new ApiError(
+                                "about:blank",
+                                errorCode.getCode(),
+                                errorCode.getTitle(),
+                                errorCode.getStatus().value(),
+                                "One or more fields are invalid",
+                                request.getRequestURI(),
+                                Instant.now(),
+                                fieldErrors);
 
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(error);
-    }
+                return ResponseEntity
+                                .status(errorCode.getStatus())
+                                .body(error);
+        }
 
-    @ExceptionHandler(OptimisticLockingFailureException.class)
-    public ResponseEntity<ApiError> handleOptimisticLocking(
-            OptimisticLockingFailureException exception,
-            HttpServletRequest request
-    ) {
+        @ExceptionHandler(OptimisticLockingFailureException.class)
+        public ResponseEntity<ApiError> handleOptimisticLocking(
+                        OptimisticLockingFailureException exception,
+                        HttpServletRequest request) {
 
-        ErrorCode errorCode =
-                ErrorCode.CONCURRENT_MODIFICATION;
+                ErrorCode errorCode = ErrorCode.CONCURRENT_MODIFICATION;
 
-        ApiError error = new ApiError(
-                "about:blank",
-                errorCode.getCode(),
-                errorCode.getTitle(),
-                errorCode.getStatus().value(),
-                "The resource was modified by another request",
-                request.getRequestURI(),
-                Instant.now(),
-                List.of()
-        );
+                ApiError error = new ApiError(
+                                "about:blank",
+                                errorCode.getCode(),
+                                errorCode.getTitle(),
+                                errorCode.getStatus().value(),
+                                "The resource was modified by another request",
+                                request.getRequestURI(),
+                                Instant.now(),
+                                List.of());
 
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(error);
-    }
+                return ResponseEntity
+                                .status(errorCode.getStatus())
+                                .body(error);
+        }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnexpectedException(
-            Exception exception,
-            HttpServletRequest request
-    ) {
+        @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<ApiError> handleArgumentTypeMismatch(
+                        MethodArgumentTypeMismatchException exception,
+                        HttpServletRequest request) {
 
-        log.error(
-                "Unexpected error processing {}",
-                request.getRequestURI(),
-                exception
-        );
+                ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
 
-        ErrorCode errorCode =
-                ErrorCode.INTERNAL_SERVER_ERROR;
+                ApiError error = new ApiError(
+                                "about:blank",
+                                errorCode.getCode(),
+                                errorCode.getTitle(),
+                                errorCode.getStatus().value(),
+                                "Invalid value for parameter: "
+                                                + exception.getName(),
+                                request.getRequestURI(),
+                                Instant.now(),
+                                List.of(
+                                                new FieldValidationError(
+                                                                exception.getName(),
+                                                                "Invalid value")));
 
-        ApiError error = new ApiError(
-                "about:blank",
-                errorCode.getCode(),
-                errorCode.getTitle(),
-                errorCode.getStatus().value(),
-                "An unexpected error occurred",
-                request.getRequestURI(),
-                Instant.now(),
-                List.of()
-        );
+                return ResponseEntity
+                                .status(errorCode.getStatus())
+                                .body(error);
+        }
 
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(error);
-    }
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+public ResponseEntity<ApiError> handleMessageNotReadable(
+        HttpMessageNotReadableException exception,
+        HttpServletRequest request
+) {
+
+    ErrorCode errorCode =
+            ErrorCode.VALIDATION_FAILED;
+
+    ApiError error = new ApiError(
+            "about:blank",
+            errorCode.getCode(),
+            errorCode.getTitle(),
+            errorCode.getStatus().value(),
+            "Request body is malformed or contains an invalid value",
+            request.getRequestURI(),
+            Instant.now(),
+            List.of()
+    );
+
+    return ResponseEntity
+            .status(errorCode.getStatus())
+            .body(error);
+}
+
+        // Recoge todas las excepciones que no estén contempladas en los manejadores
+        // anteriores
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ApiError> handleUnexpectedException(
+                        Exception exception,
+                        HttpServletRequest request) {
+
+                log.error(
+                                "Unexpected error processing {}",
+                                request.getRequestURI(),
+                                exception);
+
+                ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+
+                ApiError error = new ApiError(
+                                "about:blank",
+                                errorCode.getCode(),
+                                errorCode.getTitle(),
+                                errorCode.getStatus().value(),
+                                "An unexpected error occurred",
+                                request.getRequestURI(),
+                                Instant.now(),
+                                List.of());
+
+                return ResponseEntity
+                                .status(errorCode.getStatus())
+                                .body(error);
+        }
 }

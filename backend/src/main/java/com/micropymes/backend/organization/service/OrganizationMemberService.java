@@ -11,6 +11,7 @@ import com.micropymes.backend.organization.dto.AddMemberRequest;
 import com.micropymes.backend.organization.dto.MemberResponse;
 import com.micropymes.backend.organization.dto.UpdateMemberRoleRequest;
 import com.micropymes.backend.organization.repository.OrganizationMemberRepository;
+import com.micropymes.backend.organization.repository.OrganizationRepository;
 import com.micropymes.backend.user.domain.User;
 import com.micropymes.backend.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -24,17 +25,20 @@ import java.util.UUID;
 public class OrganizationMemberService {
 
     private final OrganizationMemberRepository memberRepository;
+    private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
     private final FollowUpRepository followUpRepository;
     private final OrganizationAccessService accessService;
 
     public OrganizationMemberService(
             OrganizationMemberRepository memberRepository,
+            OrganizationRepository organizationRepository,
             UserRepository userRepository,
             FollowUpRepository followUpRepository,
             OrganizationAccessService accessService
     ) {
         this.memberRepository = memberRepository;
+        this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.followUpRepository = followUpRepository;
         this.accessService = accessService;
@@ -65,6 +69,18 @@ public class OrganizationMemberService {
             UUID currentUserId,
             AddMemberRequest request
     ) {
+
+        /*
+         * Bloqueamos la organización antes de comprobar
+         * los permisos y modificar sus miembros.
+         *
+         * De esta forma, dos operaciones administrativas
+         * sobre la misma organización no pueden ejecutarse
+         * simultáneamente tomando decisiones con información
+         * desactualizada.
+         */
+        lockOrganization(organizationId);
+
         OrganizationMember currentMember =
                 accessService.requireOwner(
                         organizationId,
@@ -105,7 +121,9 @@ public class OrganizationMemberService {
                 );
             }
 
-            existing.reactivate(request.role());
+            existing.reactivate(
+                    request.role()
+            );
 
             return toResponse(existing);
         }
@@ -129,13 +147,24 @@ public class OrganizationMemberService {
             UUID currentUserId,
             UpdateMemberRoleRequest request
     ) {
+
+        /*
+         * Todas las modificaciones administrativas
+         * de miembros de una misma organización pasan
+         * primero por este bloqueo.
+         */
+        lockOrganization(organizationId);
+
         accessService.requireOwner(
                 organizationId,
                 currentUserId
         );
 
         OrganizationMember member =
-                findMember(organizationId, memberId);
+                findMember(
+                        organizationId,
+                        memberId
+                );
 
         if (!member.isActive()) {
             throw new ApiException(
@@ -143,13 +172,28 @@ public class OrganizationMemberService {
             );
         }
 
-        if (member.getRole() == OrganizationRole.OWNER
-                && request.role() != OrganizationRole.OWNER) {
+        /*
+         * Si estamos degradando a un OWNER,
+         * debemos comprobar que no sea el último.
+         *
+         * Como la organización está bloqueada,
+         * otra transacción no puede hacer la misma
+         * comprobación simultáneamente sobre esta
+         * organización.
+         */
+        if (member.getRole()
+                == OrganizationRole.OWNER
+                && request.role()
+                != OrganizationRole.OWNER) {
 
-            ensureNotLastOwner(organizationId);
+            ensureNotLastOwner(
+                    organizationId
+            );
         }
 
-        member.setRole(request.role());
+        member.setRole(
+                request.role()
+        );
 
         return toResponse(member);
     }
@@ -160,13 +204,26 @@ public class OrganizationMemberService {
             UUID memberId,
             UUID currentUserId
     ) {
+
+        /*
+         * También bloqueamos antes de desactivar.
+         *
+         * Esto evita que dos OWNER distintos puedan
+         * ser desactivados simultáneamente dejando
+         * la organización sin propietarios.
+         */
+        lockOrganization(organizationId);
+
         accessService.requireOwner(
                 organizationId,
                 currentUserId
         );
 
         OrganizationMember member =
-                findMember(organizationId, memberId);
+                findMember(
+                        organizationId,
+                        memberId
+                );
 
         if (!member.isActive()) {
             throw new ApiException(
@@ -174,10 +231,18 @@ public class OrganizationMemberService {
             );
         }
 
-        if (member.getRole() == OrganizationRole.OWNER) {
-            ensureNotLastOwner(organizationId);
+        if (member.getRole()
+                == OrganizationRole.OWNER) {
+
+            ensureNotLastOwner(
+                    organizationId
+            );
         }
 
+        /*
+         * Si el miembro tenía follow-ups pendientes
+         * asignados, quedan sin asignación.
+         */
         List<FollowUp> pendingFollowUps =
                 followUpRepository
                         .findByOrganization_IdAndAssignedToMember_IdAndStatus(
@@ -187,10 +252,34 @@ public class OrganizationMemberService {
                         );
 
         pendingFollowUps.forEach(
-                followUp -> followUp.setAssignedToMember(null)
+                followUp ->
+                        followUp.setAssignedToMember(
+                                null
+                        )
         );
 
         member.deactivate();
+    }
+
+    /*
+     * Obtiene y bloquea la fila de Organization
+     * mediante PESSIMISTIC_WRITE.
+     *
+     * El bloqueo se mantiene hasta que finaliza
+     * la transacción del método que lo ha llamado.
+     */
+    private void lockOrganization(
+            UUID organizationId
+    ) {
+        organizationRepository
+                .findByIdForUpdate(
+                        organizationId
+                )
+                .orElseThrow(() ->
+                        new ApiException(
+                                ErrorCode.ORGANIZATION_NOT_FOUND
+                        )
+                );
     }
 
     private OrganizationMember findMember(
@@ -229,7 +318,8 @@ public class OrganizationMemberService {
     private MemberResponse toResponse(
             OrganizationMember member
     ) {
-        User user = member.getUser();
+        User user =
+                member.getUser();
 
         return new MemberResponse(
                 member.getId(),

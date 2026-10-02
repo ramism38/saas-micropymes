@@ -84,8 +84,13 @@ public class QuoteService {
                         .toUpperCase(Locale.ROOT)
         );
 
-        quote.setExpiresAt(request.expiresAt());
-        quote.setNotes(normalize(request.notes()));
+        quote.setExpiresAt(
+                request.expiresAt()
+        );
+
+        quote.setNotes(
+                normalize(request.notes())
+        );
 
         quoteRepository.save(quote);
 
@@ -155,7 +160,9 @@ public class QuoteService {
                         quoteId
                 );
 
-        if (quote.getStatus() != QuoteStatus.DRAFT) {
+        if (quote.getStatus()
+                != QuoteStatus.DRAFT) {
+
             throw new ApiException(
                     ErrorCode.QUOTE_NOT_EDITABLE
             );
@@ -166,7 +173,9 @@ public class QuoteService {
         );
 
         if (request.amount() != null) {
-            quote.setAmount(request.amount());
+            quote.setAmount(
+                    request.amount()
+            );
         }
 
         if (request.currency() != null) {
@@ -178,7 +187,9 @@ public class QuoteService {
         }
 
         if (request.expiresAt() != null) {
-            quote.setExpiresAt(request.expiresAt());
+            quote.setExpiresAt(
+                    request.expiresAt()
+            );
         }
 
         if (request.notes() != null) {
@@ -208,7 +219,9 @@ public class QuoteService {
                         quoteId
                 );
 
-        if (quote.getStatus() != QuoteStatus.DRAFT) {
+        if (quote.getStatus()
+                != QuoteStatus.DRAFT) {
+
             throw new ApiException(
                     ErrorCode.QUOTE_NOT_SENDABLE
             );
@@ -217,12 +230,16 @@ public class QuoteService {
         Opportunity opportunity =
                 quote.getOpportunity();
 
-        requireOpenOpportunity(opportunity);
+        requireOpenOpportunity(
+                opportunity
+        );
 
-        Instant now = Instant.now(clock);
+        Instant now =
+                Instant.now(clock);
 
         if (quote.getExpiresAt() != null
-                && quote.getExpiresAt().isBefore(now)) {
+                && quote.getExpiresAt()
+                .isBefore(now)) {
 
             throw new ApiException(
                     ErrorCode.VALIDATION_FAILED,
@@ -291,7 +308,44 @@ public class QuoteService {
                         quoteId
                 );
 
-        if (quote.getStatus() != QuoteStatus.SENT) {
+        /*
+         * Una quote solamente puede aceptarse
+         * si previamente ha sido enviada.
+         */
+        if (quote.getStatus()
+                != QuoteStatus.SENT) {
+
+            throw new ApiException(
+                    ErrorCode.QUOTE_NOT_ACCEPTABLE
+            );
+        }
+
+        /*
+         * Obtenemos el instante actual utilizando
+         * el Clock inyectado.
+         *
+         * Esto permite controlar el tiempo
+         * durante los tests.
+         */
+        Instant now =
+                Instant.now(clock);
+
+        /*
+         * IMPORTANTE:
+         *
+         * Aunque el scheduler todavía no haya cambiado
+         * el estado de SENT a EXPIRED, una quote cuya
+         * fecha de expiración ya haya llegado no puede
+         * ser aceptada.
+         *
+         * !isAfter(now) equivale a:
+         *
+         * expiresAt <= now
+         */
+        if (quote.getExpiresAt() != null
+                && !quote.getExpiresAt()
+                .isAfter(now)) {
+
             throw new ApiException(
                     ErrorCode.QUOTE_NOT_ACCEPTABLE
             );
@@ -300,8 +354,14 @@ public class QuoteService {
         Opportunity opportunity =
                 quote.getOpportunity();
 
-        requireOpenOpportunity(opportunity);
+        requireOpenOpportunity(
+                opportunity
+        );
 
+        /*
+         * Comprobamos que no exista ya otro
+         * presupuesto ACCEPTED para esta oportunidad.
+         */
         if (quoteRepository
                 .existsByOpportunity_IdAndStatus(
                         opportunity.getId(),
@@ -313,19 +373,25 @@ public class QuoteService {
             );
         }
 
-        Instant now = Instant.now(clock);
-
         quote.accept();
 
         OpportunityStatus previousStatus =
                 opportunity.getStatus();
 
+        /*
+         * Aceptar una quote implica ganar
+         * automáticamente la oportunidad.
+         */
         opportunity.changeStatus(
                 OpportunityStatus.WON,
                 null,
                 now
         );
 
+        /*
+         * Una oportunidad WON ya no necesita
+         * seguimientos pendientes.
+         */
         cancelPendingFollowUps(
                 organizationId,
                 opportunity.getId()
@@ -364,7 +430,9 @@ public class QuoteService {
                         quoteId
                 );
 
-        if (quote.getStatus() != QuoteStatus.SENT) {
+        if (quote.getStatus()
+                != QuoteStatus.SENT) {
+
             throw new ApiException(
                     ErrorCode.QUOTE_NOT_REJECTABLE
             );
@@ -391,7 +459,9 @@ public class QuoteService {
                                 FollowUpStatus.PENDING
                         );
 
-        followUps.forEach(FollowUp::cancel);
+        followUps.forEach(
+                FollowUp::cancel
+        );
     }
 
     private Quote findQuote(
@@ -430,24 +500,29 @@ public class QuoteService {
             Opportunity opportunity
     ) {
         if (opportunity.isArchived()) {
+
             throw new ApiException(
                     ErrorCode.OPPORTUNITY_ARCHIVED
             );
         }
 
         if (opportunity.isClosed()) {
+
             throw new ApiException(
                     ErrorCode.OPPORTUNITY_CLOSED
             );
         }
     }
 
-    private String normalize(String value) {
+    private String normalize(
+            String value
+    ) {
         if (value == null) {
             return null;
         }
 
-        String trimmed = value.trim();
+        String trimmed =
+                value.trim();
 
         return trimmed.isEmpty()
                 ? null
@@ -459,8 +534,10 @@ public class QuoteService {
     ) {
         return new QuoteResponse(
                 quote.getId(),
-                quote.getOrganization().getId(),
-                quote.getOpportunity().getId(),
+                quote.getOrganization()
+                        .getId(),
+                quote.getOpportunity()
+                        .getId(),
                 quote.getAmount(),
                 quote.getCurrency(),
                 quote.getStatus(),

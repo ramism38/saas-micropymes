@@ -2,18 +2,19 @@ package com.micropymes.backend.organization.service;
 
 import com.micropymes.backend.common.error.ApiException;
 import com.micropymes.backend.common.error.ErrorCode;
+import com.micropymes.backend.customer.domain.Customer;
 import com.micropymes.backend.followup.domain.FollowUp;
 import com.micropymes.backend.followup.domain.FollowUpStatus;
 import com.micropymes.backend.followup.domain.FollowUpType;
 import com.micropymes.backend.followup.repository.FollowUpRepository;
 import com.micropymes.backend.opportunity.domain.Opportunity;
-import com.micropymes.backend.customer.domain.Customer;
 import com.micropymes.backend.organization.domain.Organization;
 import com.micropymes.backend.organization.domain.OrganizationMember;
 import com.micropymes.backend.organization.domain.OrganizationRole;
 import com.micropymes.backend.organization.dto.AddMemberRequest;
 import com.micropymes.backend.organization.dto.UpdateMemberRoleRequest;
 import com.micropymes.backend.organization.repository.OrganizationMemberRepository;
+import com.micropymes.backend.organization.repository.OrganizationRepository;
 import com.micropymes.backend.user.domain.User;
 import com.micropymes.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,9 @@ class OrganizationMemberServiceTest {
     private OrganizationMemberRepository memberRepository;
 
     @Mock
+    private OrganizationRepository organizationRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -50,28 +54,54 @@ class OrganizationMemberServiceTest {
     private Organization organization;
     private OrganizationMember currentOwner;
 
-    private final UUID organizationId = UUID.randomUUID();
-    private final UUID currentUserId = UUID.randomUUID();
-    private final UUID targetUserId = UUID.randomUUID();
-    private final UUID targetMemberId = UUID.randomUUID();
+    private final UUID organizationId =
+            UUID.randomUUID();
+
+    private final UUID currentUserId =
+            UUID.randomUUID();
+
+    private final UUID targetUserId =
+            UUID.randomUUID();
+
+    private final UUID targetMemberId =
+            UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
 
         MockitoAnnotations.openMocks(this);
 
-        memberService = new OrganizationMemberService(
-                memberRepository,
-                userRepository,
-                followUpRepository,
-                accessService
-        );
+        memberService =
+                new OrganizationMemberService(
+                        memberRepository,
+                        organizationRepository,
+                        userRepository,
+                        followUpRepository,
+                        accessService
+                );
 
         organization =
                 new Organization(
                         "Empresa",
                         "EUR"
                 );
+
+        /*
+         * El servicio ahora bloquea la organización
+         * antes de modificar miembros.
+         *
+         * Como organizationRepository es un mock,
+         * tenemos que indicar qué debe devolver
+         * findByIdForUpdate().
+         */
+        when(
+                organizationRepository
+                        .findByIdForUpdate(
+                                organizationId
+                        )
+        ).thenReturn(
+                Optional.of(organization)
+        );
 
         User currentUser =
                 new User(
@@ -116,7 +146,9 @@ class OrganizationMemberServiceTest {
                                 targetMemberId,
                                 organizationId
                         )
-        ).thenReturn(Optional.of(target));
+        ).thenReturn(
+                Optional.of(target)
+        );
 
         when(
                 memberRepository
@@ -153,7 +185,9 @@ class OrganizationMemberServiceTest {
                 });
 
         assertThat(target.getRole())
-                .isEqualTo(OrganizationRole.OWNER);
+                .isEqualTo(
+                        OrganizationRole.OWNER
+                );
     }
 
     @Test
@@ -170,7 +204,9 @@ class OrganizationMemberServiceTest {
                                 targetMemberId,
                                 organizationId
                         )
-        ).thenReturn(Optional.of(target));
+        ).thenReturn(
+                Optional.of(target)
+        );
 
         when(
                 memberRepository
@@ -190,7 +226,9 @@ class OrganizationMemberServiceTest {
         );
 
         assertThat(target.getRole())
-                .isEqualTo(OrganizationRole.MEMBER);
+                .isEqualTo(
+                        OrganizationRole.MEMBER
+                );
     }
 
     @Test
@@ -207,7 +245,9 @@ class OrganizationMemberServiceTest {
                                 targetMemberId,
                                 organizationId
                         )
-        ).thenReturn(Optional.of(target));
+        ).thenReturn(
+                Optional.of(target)
+        );
 
         when(
                 memberRepository
@@ -237,7 +277,8 @@ class OrganizationMemberServiceTest {
                     );
                 });
 
-        assertThat(target.isActive()).isTrue();
+        assertThat(target.isActive())
+                .isTrue();
     }
 
     @Test
@@ -279,7 +320,9 @@ class OrganizationMemberServiceTest {
                                 targetMemberId,
                                 organizationId
                         )
-        ).thenReturn(Optional.of(target));
+        ).thenReturn(
+                Optional.of(target)
+        );
 
         when(
                 followUpRepository
@@ -288,7 +331,9 @@ class OrganizationMemberServiceTest {
                                 targetMemberId,
                                 FollowUpStatus.PENDING
                         )
-        ).thenReturn(List.of(followUp));
+        ).thenReturn(
+                List.of(followUp)
+        );
 
         memberService.deactivate(
                 organizationId,
@@ -296,8 +341,11 @@ class OrganizationMemberServiceTest {
                 currentUserId
         );
 
-        assertThat(target.isActive()).isFalse();
-        assertThat(target.getLeftAt()).isNotNull();
+        assertThat(target.isActive())
+                .isFalse();
+
+        assertThat(target.getLeftAt())
+                .isNotNull();
 
         assertThat(
                 followUp.getAssignedToMember()
@@ -307,7 +355,8 @@ class OrganizationMemberServiceTest {
     @Test
     void activeMemberCannotBeAddedTwice() {
 
-        User targetUser = createTargetUser();
+        User targetUser =
+                createTargetUser();
 
         OrganizationMember existing =
                 new OrganizationMember(
@@ -317,10 +366,13 @@ class OrganizationMemberServiceTest {
                 );
 
         when(
-                userRepository.findByEmailIgnoreCase(
-                        "member@test.com"
-                )
-        ).thenReturn(Optional.of(targetUser));
+                userRepository
+                        .findByEmailIgnoreCase(
+                                "member@test.com"
+                        )
+        ).thenReturn(
+                Optional.of(targetUser)
+        );
 
         when(
                 memberRepository
@@ -328,7 +380,9 @@ class OrganizationMemberServiceTest {
                                 organizationId,
                                 targetUserId
                         )
-        ).thenReturn(Optional.of(existing));
+        ).thenReturn(
+                Optional.of(existing)
+        );
 
         AddMemberRequest request =
                 new AddMemberRequest(
@@ -360,7 +414,8 @@ class OrganizationMemberServiceTest {
     @Test
     void inactiveMemberCanBeReactivated() {
 
-        User targetUser = createTargetUser();
+        User targetUser =
+                createTargetUser();
 
         OrganizationMember existing =
                 new OrganizationMember(
@@ -372,10 +427,13 @@ class OrganizationMemberServiceTest {
         existing.deactivate();
 
         when(
-                userRepository.findByEmailIgnoreCase(
-                        "member@test.com"
-                )
-        ).thenReturn(Optional.of(targetUser));
+                userRepository
+                        .findByEmailIgnoreCase(
+                                "member@test.com"
+                        )
+        ).thenReturn(
+                Optional.of(targetUser)
+        );
 
         when(
                 memberRepository
@@ -383,7 +441,9 @@ class OrganizationMemberServiceTest {
                                 organizationId,
                                 targetUserId
                         )
-        ).thenReturn(Optional.of(existing));
+        ).thenReturn(
+                Optional.of(existing)
+        );
 
         memberService.addMember(
                 organizationId,
@@ -401,14 +461,56 @@ class OrganizationMemberServiceTest {
                 .isNull();
 
         assertThat(existing.getRole())
-                .isEqualTo(OrganizationRole.OWNER);
+                .isEqualTo(
+                        OrganizationRole.OWNER
+                );
+    }
+
+    /*
+     * Este test comprueba que, antes de modificar
+     * el rol de un miembro, el servicio solicita
+     * el bloqueo de la organización.
+     */
+    @Test
+    void changingRoleLocksOrganization() {
+
+        OrganizationMember target =
+                createTargetMember(
+                        OrganizationRole.MEMBER
+                );
+
+        when(
+                memberRepository
+                        .findByIdAndOrganization_Id(
+                                targetMemberId,
+                                organizationId
+                        )
+        ).thenReturn(
+                Optional.of(target)
+        );
+
+        memberService.changeRole(
+                organizationId,
+                targetMemberId,
+                currentUserId,
+                new UpdateMemberRoleRequest(
+                        OrganizationRole.OWNER
+                )
+        );
+
+        verify(
+                organizationRepository
+        ).findByIdForUpdate(
+                organizationId
+        );
     }
 
     private OrganizationMember createTargetMember(
             OrganizationRole role
     ) {
 
-        User user = createTargetUser();
+        User user =
+                createTargetUser();
 
         OrganizationMember member =
                 new OrganizationMember(

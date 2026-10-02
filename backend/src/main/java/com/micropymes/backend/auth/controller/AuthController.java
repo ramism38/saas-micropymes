@@ -100,18 +100,32 @@ public class AuthController {
                                 user.id(),
                                 user.email());
 
-                Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
-                                principal,
-                                null,
-                                List.of(
-                                                new SimpleGrantedAuthority(
-                                                                "ROLE_USER")));
+                Authentication authentication = UsernamePasswordAuthenticationToken
+                                .authenticated(
+                                                principal,
+                                                null,
+                                                List.of(
+                                                                new SimpleGrantedAuthority(
+                                                                                "ROLE_USER")));
 
-                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                SecurityContext context = SecurityContextHolder
+                                .createEmptyContext();
 
-                context.setAuthentication(authentication);
+                context.setAuthentication(
+                                authentication);
 
-                SecurityContextHolder.setContext(context);
+                SecurityContextHolder.setContext(
+                                context);
+
+                /*
+                 * Protección frente a session fixation.
+                 *
+                 * Si ya existía una sesión antes de autenticarse,
+                 * regeneramos su identificador.
+                 */
+                if (httpRequest.getSession(false) != null) {
+                        httpRequest.changeSessionId();
+                }
 
                 securityContextRepository.saveContext(
                                 context,

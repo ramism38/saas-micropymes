@@ -2,9 +2,6 @@ spring:
   application:
     name: backend
 
-  profiles:
-    active: local
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -20,12 +17,12 @@ management:
       exposure:
         include: health,info
 
+
 server:
   servlet:
     session:
       cookie:
         http-only: true
-        secure: false
         same-site: lax
 
 

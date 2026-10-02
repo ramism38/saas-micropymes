@@ -8,20 +8,13 @@ import java.math.BigDecimal;
 
 public record UpdateOpportunityRequest(
 
-        @Size(max = 200)
-        @Pattern(
-                regexp = ".*\\S.*",
-                message = "must not be blank"
-        )
-        String title,
+                @Size(max = 200) @Pattern(regexp = ".*\\S.*", message = "must not be blank") String title,
 
-        String description,
+                String description,
 
-        @DecimalMin(value = "0.00")
-        BigDecimal estimatedValue,
+                @DecimalMin(value = "0.00") BigDecimal estimatedValue,
 
-        @Size(min = 3, max = 3)
-        String currency
+                @Pattern(regexp = "^[A-Za-z]{3}$", message = "currency must contain exactly 3 letters") String currency
 
 ) {
 }

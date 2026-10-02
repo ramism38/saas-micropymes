@@ -135,6 +135,11 @@ public enum ErrorCode {
                         "Owner permission required",
                         HttpStatus.FORBIDDEN),
 
+        ACCESS_DENIED(
+                        "ACCESS_DENIED",
+                        "Access denied",
+                        HttpStatus.FORBIDDEN),
+
         ORGANIZATION_NOT_FOUND(
                         "ORGANIZATION_NOT_FOUND",
                         "Organization not found",

@@ -41,354 +41,355 @@ import static org.mockito.Mockito.*;
 
 class QuoteServiceTest {
 
-    @Mock
-    private QuoteRepository quoteRepository;
+        @Mock
+        private QuoteRepository quoteRepository;
 
-    @Mock
-    private OpportunityRepository opportunityRepository;
+        @Mock
+        private OpportunityRepository opportunityRepository;
 
-    @Mock
-    private ActivityRepository activityRepository;
+        @Mock
+        private ActivityRepository activityRepository;
 
-    @Mock
-    private FollowUpRepository followUpRepository;
+        @Mock
+        private FollowUpRepository followUpRepository;
 
-    @Mock
-    private OrganizationAccessService accessService;
+        @Mock
+        private OrganizationAccessService accessService;
 
-    private QuoteService quoteService;
+        private QuoteService quoteService;
 
-    private Organization organization;
-    private OrganizationMember member;
-    private Opportunity opportunity;
+        private Organization organization;
+        private OrganizationMember member;
+        private Opportunity opportunity;
 
-    private final UUID organizationId = UUID.randomUUID();
-    private final UUID userId = UUID.randomUUID();
-    private final UUID opportunityId = UUID.randomUUID();
-    private final UUID quoteId = UUID.randomUUID();
+        private final UUID organizationId = UUID.randomUUID();
+        private final UUID userId = UUID.randomUUID();
+        private final UUID opportunityId = UUID.randomUUID();
+        private final UUID quoteId = UUID.randomUUID();
 
-    private final Instant fixedInstant =
-            Instant.parse("2026-09-12T10:00:00Z");
+        private final Instant fixedInstant = Instant.parse("2026-09-12T10:00:00Z");
 
-    @BeforeEach
-    void setUp() {
+        @BeforeEach
+        void setUp() {
 
-        MockitoAnnotations.openMocks(this);
+                MockitoAnnotations.openMocks(this);
 
-        Clock clock = Clock.fixed(
-                fixedInstant,
-                ZoneOffset.UTC
-        );
+                Clock clock = Clock.fixed(
+                                fixedInstant,
+                                ZoneOffset.UTC);
 
-        quoteService = new QuoteService(
-                quoteRepository,
-                opportunityRepository,
-                activityRepository,
-                followUpRepository,
-                accessService,
-                clock
-        );
+                quoteService = new QuoteService(
+                                quoteRepository,
+                                opportunityRepository,
+                                activityRepository,
+                                followUpRepository,
+                                accessService,
+                                clock);
 
-        organization =
-                new Organization(
-                        "Empresa",
-                        "EUR"
-                );
+                organization = new Organization(
+                                "Empresa",
+                                "EUR");
 
-        User user =
-                new User(
-                        "user@test.com",
-                        "hash",
-                        "Test",
-                        "User"
-                );
+                User user = new User(
+                                "user@test.com",
+                                "hash",
+                                "Test",
+                                "User");
 
-        member =
-                new OrganizationMember(
-                        organization,
-                        user,
-                        OrganizationRole.OWNER
-                );
+                member = new OrganizationMember(
+                                organization,
+                                user,
+                                OrganizationRole.OWNER);
 
-        Customer customer =
-                new Customer(
-                        organization,
-                        "Cliente"
-                );
+                Customer customer = new Customer(
+                                organization,
+                                "Cliente");
 
-        opportunity =
-                new Opportunity(
-                        organization,
-                        customer,
-                        "Oportunidad"
-                );
+                opportunity = new Opportunity(
+                                organization,
+                                customer,
+                                "Oportunidad");
 
-        /*
-         * Como estas entidades no pasan por Hibernate
-         * durante el test unitario, asignamos manualmente
-         * los UUID necesarios.
-         */
-        ReflectionTestUtils.setField(
-                opportunity,
-                "id",
-                opportunityId
-        );
+                /*
+                 * Como estas entidades no pasan por Hibernate
+                 * durante el test unitario, asignamos manualmente
+                 * los UUID necesarios.
+                 */
+                ReflectionTestUtils.setField(
+                                opportunity,
+                                "id",
+                                opportunityId);
 
-        when(
-                accessService.requireMember(
-                        organizationId,
-                        userId
-                )
-        ).thenReturn(member);
-    }
+                when(
+                                accessService.requireMember(
+                                                organizationId,
+                                                userId))
+                                .thenReturn(member);
+        }
 
-    @Test
-    void draftQuoteCannotBeAccepted() {
+        @Test
+        void draftQuoteCannotBeAccepted() {
 
-        Quote quote = createQuote();
+                Quote quote = createQuote();
 
-        when(
-                quoteRepository
-                        .findByIdAndOrganization_Id(
-                                quoteId,
-                                organizationId
-                        )
-        ).thenReturn(Optional.of(quote));
+                when(
+                                quoteRepository
+                                                .findByIdAndOrganization_Id(
+                                                                quoteId,
+                                                                organizationId))
+                                .thenReturn(Optional.of(quote));
 
-        assertThatThrownBy(() ->
-                quoteService.accept(
-                        organizationId,
-                        quoteId,
-                        userId
-                )
-        )
-                .isInstanceOf(ApiException.class)
-                .satisfies(exception -> {
-
-                    ApiException apiException =
-                            (ApiException) exception;
-
-                    assertThat(
-                            apiException.getErrorCode()
-                    ).isEqualTo(
-                            ErrorCode.QUOTE_NOT_ACCEPTABLE
-                    );
-                });
-    }
-
-    @Test
-    void sendingQuoteChangesQuoteToSentAndOpportunityToProposalSent() {
-
-        Quote quote = createQuote();
-
-        when(
-                quoteRepository
-                        .findByIdAndOrganization_Id(
-                                quoteId,
-                                organizationId
-                        )
-        ).thenReturn(Optional.of(quote));
-
-        quoteService.send(
-                organizationId,
-                quoteId,
-                userId
-        );
-
-        assertThat(quote.getStatus())
-                .isEqualTo(QuoteStatus.SENT);
-
-        assertThat(quote.getSentAt())
-                .isEqualTo(fixedInstant);
-
-        assertThat(opportunity.getStatus())
-                .isEqualTo(
-                        OpportunityStatus.PROPOSAL_SENT
-                );
-
-        verify(
-                activityRepository,
-                times(2)
-        ).save(any());
-    }
-
-    @Test
-    void acceptingQuoteWinsOpportunityAndCancelsPendingFollowUps() {
-
-        Quote quote = createQuote();
-
-        quote.send(
-                fixedInstant.minusSeconds(3600)
-        );
-
-        FollowUp followUp =
-                new FollowUp(
-                        organization,
-                        opportunity,
-                        FollowUpType.CALL,
-                        fixedInstant.plusSeconds(3600)
-                );
-
-        when(
-                quoteRepository
-                        .findByIdAndOrganization_Id(
-                                quoteId,
-                                organizationId
-                        )
-        ).thenReturn(Optional.of(quote));
-
-        when(
-                quoteRepository
-                        .existsByOpportunity_IdAndStatus(
-                                opportunityId,
-                                QuoteStatus.ACCEPTED
-                        )
-        ).thenReturn(false);
-
-        when(
-                followUpRepository
-                        .findByOpportunity_IdAndOrganization_IdAndStatus(
-                                opportunityId,
+                assertThatThrownBy(() -> quoteService.accept(
                                 organizationId,
-                                FollowUpStatus.PENDING
-                        )
-        ).thenReturn(List.of(followUp));
-
-        quoteService.accept(
-                organizationId,
-                quoteId,
-                userId
-        );
-
-        assertThat(quote.getStatus())
-                .isEqualTo(QuoteStatus.ACCEPTED);
-
-        assertThat(opportunity.getStatus())
-                .isEqualTo(OpportunityStatus.WON);
-
-        assertThat(opportunity.getClosedAt())
-                .isEqualTo(fixedInstant);
-
-        assertThat(followUp.getStatus())
-                .isEqualTo(FollowUpStatus.CANCELLED);
-
-        verify(activityRepository)
-                .save(any());
-    }
-
-    @Test
-    void secondAcceptedQuoteIsRejected() {
-
-        Quote quote = createQuote();
-
-        quote.send(
-                fixedInstant.minusSeconds(3600)
-        );
-
-        when(
-                quoteRepository
-                        .findByIdAndOrganization_Id(
                                 quoteId,
-                                organizationId
-                        )
-        ).thenReturn(Optional.of(quote));
+                                userId))
+                                .isInstanceOf(ApiException.class)
+                                .satisfies(exception -> {
 
-        when(
-                quoteRepository
-                        .existsByOpportunity_IdAndStatus(
-                                opportunityId,
-                                QuoteStatus.ACCEPTED
-                        )
-        ).thenReturn(true);
+                                        ApiException apiException = (ApiException) exception;
 
-        assertThatThrownBy(() ->
+                                        assertThat(
+                                                        apiException.getErrorCode()).isEqualTo(
+                                                                        ErrorCode.QUOTE_NOT_ACCEPTABLE);
+                                });
+        }
+
+        @Test
+        void sendingQuoteChangesQuoteToSentAndOpportunityToProposalSent() {
+
+                Quote quote = createQuote();
+
+                when(
+                                quoteRepository
+                                                .findByIdAndOrganization_Id(
+                                                                quoteId,
+                                                                organizationId))
+                                .thenReturn(Optional.of(quote));
+
+                quoteService.send(
+                                organizationId,
+                                quoteId,
+                                userId);
+
+                assertThat(quote.getStatus())
+                                .isEqualTo(QuoteStatus.SENT);
+
+                assertThat(quote.getSentAt())
+                                .isEqualTo(fixedInstant);
+
+                assertThat(opportunity.getStatus())
+                                .isEqualTo(
+                                                OpportunityStatus.PROPOSAL_SENT);
+
+                verify(
+                                activityRepository,
+                                times(2)).save(any());
+        }
+
+        @Test
+        void acceptingQuoteWinsOpportunityAndCancelsPendingFollowUps() {
+
+                Quote quote = createQuote();
+
+                quote.send(
+                                fixedInstant.minusSeconds(3600));
+
+                FollowUp followUp = new FollowUp(
+                                organization,
+                                opportunity,
+                                FollowUpType.CALL,
+                                fixedInstant.plusSeconds(3600));
+
+                when(
+                                quoteRepository
+                                                .findByIdAndOrganization_Id(
+                                                                quoteId,
+                                                                organizationId))
+                                .thenReturn(Optional.of(quote));
+
+                when(
+                                quoteRepository
+                                                .existsByOpportunity_IdAndStatus(
+                                                                opportunityId,
+                                                                QuoteStatus.ACCEPTED))
+                                .thenReturn(false);
+
+                when(
+                                followUpRepository
+                                                .findByOpportunity_IdAndOrganization_IdAndStatus(
+                                                                opportunityId,
+                                                                organizationId,
+                                                                FollowUpStatus.PENDING))
+                                .thenReturn(List.of(followUp));
+
                 quoteService.accept(
-                        organizationId,
-                        quoteId,
-                        userId
-                )
-        )
-                .isInstanceOf(ApiException.class)
-                .satisfies(exception -> {
-
-                    ApiException apiException =
-                            (ApiException) exception;
-
-                    assertThat(
-                            apiException.getErrorCode()
-                    ).isEqualTo(
-                            ErrorCode.QUOTE_ALREADY_ACCEPTED
-                    );
-                });
-
-        assertThat(quote.getStatus())
-                .isEqualTo(QuoteStatus.SENT);
-
-        assertThat(opportunity.getStatus())
-                .isEqualTo(OpportunityStatus.NEW);
-    }
-
-    @Test
-    void sentQuoteCannotBeEdited() {
-
-        Quote quote = createQuote();
-
-        quote.send(fixedInstant);
-
-        when(
-                quoteRepository
-                        .findByIdAndOrganization_Id(
+                                organizationId,
                                 quoteId,
-                                organizationId
-                        )
-        ).thenReturn(Optional.of(quote));
+                                userId);
 
-        UpdateQuoteRequest request =
-                new UpdateQuoteRequest(
-                        new BigDecimal("2500.00"),
-                        null,
-                        null,
-                        null
+                assertThat(quote.getStatus())
+                                .isEqualTo(QuoteStatus.ACCEPTED);
+
+                assertThat(opportunity.getStatus())
+                                .isEqualTo(OpportunityStatus.WON);
+
+                assertThat(opportunity.getClosedAt())
+                                .isEqualTo(fixedInstant);
+
+                assertThat(followUp.getStatus())
+                                .isEqualTo(FollowUpStatus.CANCELLED);
+
+                verify(activityRepository)
+                                .save(any());
+        }
+
+        @Test
+        void secondAcceptedQuoteIsRejected() {
+
+                Quote quote = createQuote();
+
+                quote.send(
+                                fixedInstant.minusSeconds(3600));
+
+                when(
+                                quoteRepository
+                                                .findByIdAndOrganization_Id(
+                                                                quoteId,
+                                                                organizationId))
+                                .thenReturn(Optional.of(quote));
+
+                when(
+                                quoteRepository
+                                                .existsByOpportunity_IdAndStatus(
+                                                                opportunityId,
+                                                                QuoteStatus.ACCEPTED))
+                                .thenReturn(true);
+
+                assertThatThrownBy(() -> quoteService.accept(
+                                organizationId,
+                                quoteId,
+                                userId))
+                                .isInstanceOf(ApiException.class)
+                                .satisfies(exception -> {
+
+                                        ApiException apiException = (ApiException) exception;
+
+                                        assertThat(
+                                                        apiException.getErrorCode()).isEqualTo(
+                                                                        ErrorCode.QUOTE_ALREADY_ACCEPTED);
+                                });
+
+                assertThat(quote.getStatus())
+                                .isEqualTo(QuoteStatus.SENT);
+
+                assertThat(opportunity.getStatus())
+                                .isEqualTo(OpportunityStatus.NEW);
+        }
+
+@Test
+void expiredSentQuoteCannotBeAccepted() {
+
+    Quote quote = createQuote();
+
+    quote.send(
+            fixedInstant.minusSeconds(7200)
+    );
+
+    quote.setExpiresAt(
+            fixedInstant.minusSeconds(3600)
+    );
+
+    when(
+            quoteRepository
+                    .findByIdAndOrganization_Id(
+                            quoteId,
+                            organizationId
+                    )
+    ).thenReturn(
+            Optional.of(quote)
+    );
+
+    assertThatThrownBy(() ->
+            quoteService.accept(
+                    organizationId,
+                    quoteId,
+                    userId
+            )
+    )
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> {
+
+                ApiException apiException =
+                        (ApiException) exception;
+
+                assertThat(
+                        apiException.getErrorCode()
+                ).isEqualTo(
+                        ErrorCode.QUOTE_NOT_ACCEPTABLE
                 );
+            });
 
-        assertThatThrownBy(() ->
-                quoteService.update(
-                        organizationId,
-                        quoteId,
-                        userId,
-                        request
-                )
-        )
-                .isInstanceOf(ApiException.class)
-                .satisfies(exception -> {
+    assertThat(quote.getStatus())
+            .isEqualTo(QuoteStatus.SENT);
 
-                    ApiException apiException =
-                            (ApiException) exception;
+    assertThat(opportunity.getStatus())
+            .isEqualTo(OpportunityStatus.NEW);
 
-                    assertThat(
-                            apiException.getErrorCode()
-                    ).isEqualTo(
-                            ErrorCode.QUOTE_NOT_EDITABLE
-                    );
-                });
-    }
+    verify(
+            activityRepository,
+            never()
+    ).save(any());
+}
 
-    private Quote createQuote() {
+        @Test
+        void sentQuoteCannotBeEdited() {
 
-        Quote quote =
-                new Quote(
-                        organization,
-                        opportunity,
-                        new BigDecimal("1500.00"),
-                        "EUR"
-                );
+                Quote quote = createQuote();
 
-        ReflectionTestUtils.setField(
-                quote,
-                "id",
-                quoteId
-        );
+                quote.send(fixedInstant);
 
-        return quote;
-    }
+                when(
+                                quoteRepository
+                                                .findByIdAndOrganization_Id(
+                                                                quoteId,
+                                                                organizationId))
+                                .thenReturn(Optional.of(quote));
+
+                UpdateQuoteRequest request = new UpdateQuoteRequest(
+                                new BigDecimal("2500.00"),
+                                null,
+                                null,
+                                null);
+
+                assertThatThrownBy(() -> quoteService.update(
+                                organizationId,
+                                quoteId,
+                                userId,
+                                request))
+                                .isInstanceOf(ApiException.class)
+                                .satisfies(exception -> {
+
+                                        ApiException apiException = (ApiException) exception;
+
+                                        assertThat(
+                                                        apiException.getErrorCode()).isEqualTo(
+                                                                        ErrorCode.QUOTE_NOT_EDITABLE);
+                                });
+        }
+
+        private Quote createQuote() {
+
+                Quote quote = new Quote(
+                                organization,
+                                opportunity,
+                                new BigDecimal("1500.00"),
+                                "EUR");
+
+                ReflectionTestUtils.setField(
+                                quote,
+                                "id",
+                                quoteId);
+
+                return quote;
+        }
 }
