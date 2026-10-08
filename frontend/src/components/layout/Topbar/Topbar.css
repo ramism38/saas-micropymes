@@ -1,0 +1,192 @@
+/**
+ * ============================================================
+ * TOPBAR
+ * ============================================================
+ *
+ * Barra superior persistente de la aplicación.
+ *
+ * Al igual que Sidebar, todos los colores proceden del Design System.
+ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+
+  z-index: var(--z-sticky);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: var(--topbar-height);
+
+  padding: 0 var(--space-8);
+
+  background: var(--color-surface);
+
+  border-bottom: 1px solid var(--color-border);
+}
+
+/**
+ * Zona izquierda reservada principalmente para futuras acciones
+ * responsive, como el botón que abrirá la navegación móvil.
+ */
+.topbar__start {
+  min-width: 1px;
+}
+
+/**
+ * Agrupa todas las acciones situadas en la zona derecha.
+ */
+.topbar__actions {
+  display: flex;
+  align-items: center;
+
+  gap: var(--space-3);
+}
+
+/**
+ * ============================================================
+ * ORGANIZACIÓN
+ * ============================================================
+ */
+
+.topbar__organization {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: var(--control-height);
+
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.topbar__organization:hover {
+  border-color: var(--color-border-strong);
+}
+
+/**
+ * Icono decorativo situado dentro del selector.
+ */
+.topbar__organization-icon {
+  position: absolute;
+  left: var(--space-3);
+
+  pointer-events: none;
+}
+
+/**
+ * Select nativo utilizado temporalmente para la organización activa.
+ *
+ * Durante la integración el valor dejará de ser "current" y pasará
+ * a ser previsiblemente el UUID real de la organización.
+ */
+.topbar__organization-select {
+  min-height: var(--control-height);
+
+  padding:
+    0
+    var(--space-8)
+    0
+    calc(var(--space-8) + var(--space-1));
+
+  color: var(--color-text);
+  background: transparent;
+
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+
+  border: 0;
+  outline: 0;
+
+  cursor: pointer;
+}
+
+.topbar__organization:focus-within {
+  border-color: var(--color-primary);
+
+  outline: 2px solid var(--color-primary-soft);
+  outline-offset: 1px;
+}
+
+/**
+ * ============================================================
+ * PERFIL
+ * ============================================================
+ */
+
+.topbar__profile {
+  display: grid;
+  place-items: center;
+
+  width: var(--control-height);
+  height: var(--control-height);
+
+  padding: 0;
+
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.topbar__profile:not(:disabled):hover {
+  color: var(--color-text);
+  background: var(--color-surface-secondary);
+  border-color: var(--color-border-strong);
+}
+
+/**
+ * Estado temporal mientras el perfil todavía no está implementado.
+ */
+.topbar__profile:disabled {
+  opacity: 0.55;
+}
+
+/**
+ * ============================================================
+ * RESPONSIVE
+ * ============================================================
+ */
+
+@media (max-width: 1023px) {
+  .topbar {
+    padding-inline: var(--space-6);
+  }
+}
+
+@media (max-width: 639px) {
+  .topbar {
+    padding-inline: var(--space-4);
+  }
+
+  /**
+   * En móvil reducimos ligeramente la distancia entre controles.
+   */
+  .topbar__actions {
+    gap: var(--space-2);
+  }
+
+  /**
+   * El selector de organización puede necesitar menos espacio en
+   * dispositivos estrechos.
+   */
+  .topbar__organization-select {
+    max-width: 150px;
+  }
+}

@@ -1,0 +1,71 @@
+/**
+ * ============================================================
+ * PRIORITY BADGE
+ * ============================================================
+ *
+ * Representación compacta del nivel de prioridad.
+ *
+ * Los colores están pensados para transmitir urgencia sin llenar
+ * las tablas y tarjetas de fondos excesivamente intensos.
+ */
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  padding:
+    var(--space-1)
+    var(--space-2);
+
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+
+  border-radius: var(--radius-full);
+
+  white-space: nowrap;
+}
+
+.priority-badge__score {
+  opacity: 0.85;
+}
+
+/**
+ * Baja.
+ */
+.priority-badge--low {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+/**
+ * Media.
+ */
+.priority-badge--medium {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+/**
+ * Alta.
+ *
+ * Todavía no tenemos un token específico "orange".
+ * Para esta primera versión reutilizamos warning.
+ *
+ * Más adelante podremos ampliar el Design System si necesitamos
+ * diferenciar visualmente HIGH y MEDIUM con mayor precisión.
+ */
+.priority-badge--high {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+/**
+ * Urgente.
+ */
+.priority-badge--urgent {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}

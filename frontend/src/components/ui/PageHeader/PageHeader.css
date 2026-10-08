@@ -1,0 +1,83 @@
+/**
+ * ============================================================
+ * PAGE HEADER
+ * ============================================================
+ *
+ * Cabecera común utilizada en las páginas principales.
+ *
+ * La distribución permite tener:
+ *
+ * izquierda  -> título + descripción
+ * derecha    -> acciones opcionales
+ */
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: var(--space-6);
+
+  margin-bottom: var(--space-8);
+}
+
+.page-header__content {
+  min-width: 0;
+}
+
+/**
+ * Título principal.
+ *
+ * Eliminamos el margen por defecto del navegador para que el espaciado
+ * dependa únicamente de nuestro Design System.
+ */
+.page-header__title {
+  margin: 0;
+
+  color: var(--color-text);
+
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.25;
+}
+
+/**
+ * Texto explicativo situado debajo del título.
+ */
+.page-header__description {
+  margin:
+    var(--space-2)
+    0
+    0;
+
+  color: var(--color-text-secondary);
+
+  font-size: var(--font-size-base);
+}
+
+/**
+ * Contenedor reservado para botones y acciones.
+ */
+.page-header__actions {
+  display: flex;
+  align-items: center;
+
+  gap: var(--space-3);
+
+  flex-shrink: 0;
+}
+
+/**
+ * En móvil permitimos que las acciones bajen debajo del título.
+ */
+@media (max-width: 639px) {
+  .page-header {
+    flex-direction: column;
+
+    margin-bottom: var(--space-6);
+  }
+
+  .page-header__actions {
+    width: 100%;
+  }
+}
